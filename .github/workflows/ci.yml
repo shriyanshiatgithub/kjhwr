@@ -1,0 +1,41 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r backend/requirements-dev.txt
+      - run: cd backend && python -m pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - run: cd frontend && npm ci && npm test && npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images
+        run: docker compose build
+      - name: Start stack
+        run: docker compose up -d
+      - name: Smoke test through the frontend container (nginx -> backend)
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/api/health; then echo; break; fi
+            sleep 2
+          done
+          curl -sf http://localhost:8080/api/health
+          curl -sf "http://localhost:8080/api/decision-day?delivery_date=2026-01-15" > /dev/null
+          curl -sf http://localhost:8080/ | grep -q "Wind Forecast Desk"
+      - name: Show logs on failure
+        if: failure()
+        run: docker compose logs
+      - run: docker compose down
