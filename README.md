@@ -52,12 +52,10 @@ This project was built with the help of an AI assistant (Claude by Anthropic) fo
 ├── scripts/
 │   ├── fetch_snapshot.py            download real data from Elexon
 │   └── make_synthetic_snapshot.py   generate labelled SYNTHETIC data for development only
-├── api/index.py             Vercel serverless entrypoint
-├── vercel.json, requirements.txt   Vercel deployment config
+├── vercel.json              Vercel config: frontend + backend as two services
 ├── docker-compose.yml
 ├── .github/workflows/ci.yml        runs backend and frontend tests on every push
-├── GUIDE.md                 domain and design explanation
-└── WORKFLOW.md              build checklist
+└── GUIDE.md                 domain and design explanation
 ```
 
 ## How to start
@@ -69,7 +67,7 @@ pip install -r backend/requirements-dev.txt
 python scripts/fetch_snapshot.py
 ```
 
-This writes `backend/data/snapshot.json`. Until you do, the repo may contain *synthetic* demo data; the UI shows a warning banner when it does.
+This writes `backend/data/snapshot.json`. The repo already contains a snapshot of the real January 2026 data, so this step is only needed to refresh it. (`scripts/make_synthetic_snapshot.py` can generate clearly labelled fake data for development; the UI shows a warning banner if that is loaded.)
 
 ### 2. Run locally
 
@@ -110,9 +108,28 @@ cd frontend && npm test             # formatting and calculation helpers
 
 ## Deploying to Vercel
 
-1. Push the repo to GitHub, import it in Vercel.
-2. Leave the framework preset as "Other"; `vercel.json` sets the build command, output directory and the `/api` rewrite.
-3. Put the live URL at the top of this README.
+`vercel.json` defines two services in one project: the Vite `frontend` (served at `/`) and the FastAPI `backend` (served at `/api/*`; the path is passed through unchanged, so routes already start with `/api`).
+
+1. Push the repo to GitHub and import it in Vercel (root directory `./`).
+2. Vercel reads `vercel.json` and builds both services; no extra settings are needed.
+3. Check `<url>/api/health`, then open `<url>/`.
+
+## Findings (January 2026 pilot, delivery days 2 Jan - 1 Feb)
+
+Using the forecast available at a 09:00 UK deadline on the previous day (744 hourly comparisons):
+
+| Metric | Value |
+|---|---|
+| Mean absolute error | about 2,022 MW |
+| RMSE | about 2,497 MW |
+| Bias (forecast - actual) | about +1,746 MW (forecasts too high) |
+| 90% of misses below | about 4,154 MW |
+| Mean absolute percentage error | about 21.9% |
+
+- **Forecasts were too high on most days**, so a buyer relying on them would usually be short of wind power.
+- **Waiting for a later forecast barely helps.** Error is already about 1,700 MW (MAE) for forecasts made 1 hour ahead and rises only to about 2,300 MW at 48 hours. This suggests a systematic offset between the two datasets rather than weather uncertainty. The cause is not yet established; possible explanations (for example curtailment, or differing definitions of the two series) are untested.
+- **The forecast feed only has values for every other half-hour** on the days inspected, so comparisons use the periods that have both a forecast and an actual.
+- Error is concentrated in a few days (11-12 Jan and 28 Jan stand out in the daily chart).
 
 ## Limitations
 
