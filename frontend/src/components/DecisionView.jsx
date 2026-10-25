@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../api";
-import { bufferAdvice, energyMWh, fmtMW, fmtSigned, toChartRows, ukDateTime } from "../format";
+import { bufferAdvice, fmtMW, fmtSigned, toChartRows, ukDateTime } from "../format";
 import { useApi } from "../useApi";
 import MetricCards from "./MetricCards";
 import StatusBlock from "./StatusBlock";
@@ -18,8 +18,8 @@ export default function DecisionView({ range, cutoff }) {
     const paired = data.points.filter((p) => p.forecast != null && p.actual != null);
     return {
       rows: toChartRows(data.points),
-      forecastMWh: energyMWh(paired.map((p) => p.forecast)),
-      actualMWh: energyMWh(paired.map((p) => p.actual)),
+      avgForecast: paired.length ? paired.reduce((t, p) => t + p.forecast, 0) / paired.length : null,
+      avgActual: paired.length ? paired.reduce((t, p) => t + p.actual, 0) / paired.length : null,
       firstPub: pubs[0],
       lastPub: pubs[pubs.length - 1],
     };
@@ -77,11 +77,11 @@ export default function DecisionView({ range, cutoff }) {
               <div className="panel">
                 <h2>What this means for the purchase</h2>
                 <dl className="facts">
-                  <dt>Forecast wind energy (compared periods)</dt>
-                  <dd>{Math.round(summary.forecastMWh).toLocaleString("en-GB")} MWh</dd>
-                  <dt>Actual wind energy (compared periods)</dt>
-                  <dd>{Math.round(summary.actualMWh).toLocaleString("en-GB")} MWh</dd>
-                  <dt>Difference</dt>
+                  <dt>Average forecast wind output</dt>
+                  <dd>{fmtMW(summary.avgForecast)}</dd>
+                  <dt>Average actual wind output</dt>
+                  <dd>{fmtMW(summary.avgActual)}</dd>
+                  <dt>Difference (forecast - actual)</dt>
                   <dd>{fmtSigned(data.metrics.bias)} on average ({data.metrics.bias > 0 ? "over-forecast: shortfall" : "under-forecast: surplus"})</dd>
                 </dl>
                 <p className="muted">{bufferAdvice(data.metrics)}</p>

@@ -7,11 +7,11 @@ A web app for a UK energy utility's day-ahead power buyers. It shows:
 
 Scope: national wind generation only, from Elexon BMRS (`FUELHH` actuals, `WINDFOR` forecasts), for purchase decisions made in **January 2026**.
 
-**Live app:** `<ADD VERCEL URL HERE>`
+**Live app:** `https://kjhwr-snowy.vercel.app/`
 
 ## AI tools disclosure
 
-This project was built with the help of an AI assistant (Claude by Anthropic) for code generation, tests and documentation. I reviewed the code and can explain and modify it.
+Claude (Anthropic) was used as an AI-assisted tool for coding support, testing, and documentation. The code was reviewed and validated to ensure functionality and quality.
 
 ## Key assumptions
 
